@@ -1,0 +1,18 @@
+---
+title: "Movie Ratings"
+author: "Denise Atherley"
+format: html
+editor: visual
+---
+
+## Approach
+
+I will be using an external form tool to generate a survey to ask people to rate the movies selected on a scale from 1-5. This survey will be disseminated to my closest friends and family to complete and will allow the option for N/A if they have not watched the film. Once they complete the survey I will collect their ratings in a SQL database using Microsoft SQL Server Management Studio.
+
+### SQL Database
+
+I will create three distinct tables - one for the users (with a unique ID added for each user), one for the movies (with a unique ID for each movie) and one for the ratings (includes the person, the movie and the rating). I will create a relationship between these tables using the unique IDs I created.
+
+### R
+
+I will use base R programming to query the SQL data that I export into a .csv file. I will then convert the output into a tidy dataframe and use dplyr to count the ratings per user and movie as well as compute the average ratings, excluding those that are N/A.
