@@ -1,0 +1,14 @@
+---
+title: "Classification Metrics"
+author: "Denise Atherley"
+format: html
+editor: visual
+---
+
+## Approach
+
+Having minimal experience with evaluating classification model performance, I first read through the article by Mohammed Sunasra, "Performance Metrics for Classification Problems in Machine Learning". I was able to get information on the Confustion matrix and the terms associated with it like True Positives, True Negatives, False Positives and False Negatives. 
+I then used the publically available dataset provided, labeled penguin_predictions.csv to complete the assignment.
+
+### R
+I will use base R programming to inspect the dataset and develop a plot to show the actual class distribution of the target variable. I will recompute with the predicted class. I will then build confusion matrices manually by creating logical conditions for each confustion matrix term and then count the rows that satisfy each condition. Lastly, I will derive the metrics for accuracy, precision, recall and F1 using the given formulas.
