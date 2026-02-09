@@ -7,8 +7,142 @@ editor: visual
 
 ## Approach
 
-Having minimal experience with evaluating classification model performance, I first read through the article by Mohammed Sunasra, "Performance Metrics for Classification Problems in Machine Learning". I was able to get information on the Confustion matrix and the terms associated with it like True Positives, True Negatives, False Positives and False Negatives. 
-I then used the publically available dataset provided, labeled penguin_predictions.csv to complete the assignment.
+Having minimal experience with evaluating classification model performance, I first read through the article by Mohammed Sunasra, "Performance Metrics for Classification Problems in Machine Learning". I was able to get information on the Confusion matrix and the terms associated with it like True Positives, True Negatives, False Positives and False Negatives. I then used the publicly available dataset provided, labeled penguin_predictions.csv to complete the assignment.
 
 ### R
-I will use base R programming to inspect the dataset and develop a plot to show the actual class distribution of the target variable. I will recompute with the predicted class. I will then build confusion matrices manually by creating logical conditions for each confustion matrix term and then count the rows that satisfy each condition. Lastly, I will derive the metrics for accuracy, precision, recall and F1 using the given formulas.
+
+I will use R programming with tidyverse syntac to inspect the dataset and develop a plot to show the actual class distribution of the target variable. I will recompute with the predicted class. I will then build confusion matrices manually by creating logical conditions for each confusion matrix term and then count the rows that satisfy each condition. Lastly, I will derive the metrics for accuracy, precision, recall and F1 using the given formulas.
+
+## Code Deliverable
+
+### Null Error Rate
+
+```{r}
+#| echo: true
+library(tidyverse)
+
+```
+
+```{r}
+#| echo: true
+library(gt)
+
+```
+
+```{r}
+#| echo: true
+url <- "https://raw.githubusercontent.com/acatlin/data/refs/heads/master/penguin_predictions.csv"
+
+df <- read_csv(url)
+
+glimpse(df)
+
+```
+
+```{r}
+#| echo: true
+df |>
+  gt()
+
+```
+
+I will now calculate the Null Error Rate
+
+```{r}
+#| echo: true
+null_stats <- df %>%
+  count(sex) %>%
+  mutate (prcnt = n /sum(n))
+```
+
+Assuming the majority class is the "Null Model" prediction
+
+```{r}
+#| echo: true
+majority_class_prcnt <- max(null_stats$prcnt)
+null_error_rate <- 1 - majority_class_prcnt
+
+print(paste("Null Error Rate:", round(null_error_rate, 4)))
+```
+
+I will now create a plot distribution
+
+```{r}
+#| echo: true
+ggplot(df, aes(x = sex, fill = sex)) +
+  geom_bar() +
+  labs(title = "Distribution of Actual Penguin Sex",
+       x = "Sex",
+       y = "COunt") +
+  theme_minimal()
+```
+
+### Confusion Matrices at Multiple Thresholds
+
+I will create a helper function to calculate the confusion matrix components for each specific threshold.
+
+```{r}
+#| echo: true
+# Function to get confusion matrix components
+get_cm <- function(data, threshold) {
+  data %>%
+    mutate(pred_at_thresh = if_else(.pred_female > threshold, "female", "male")) %>%
+    mutate(category = case_when(
+      pred_at_thresh == "female" & sex == "female" ~ "TP",
+      pred_at_thresh == "female" & sex == "male"   ~ "FP",
+      pred_at_thresh == "male"   & sex == "male"   ~ "TN",
+      pred_at_thresh == "male"   & sex == "female" ~ "FN"
+    )) %>%
+    count(category) %>%
+    pivot_wider(names_from = category, values_from = n, values_fill = 0) %>%
+    mutate(threshold = threshold)
+}
+
+# Compute for 0.2, 0.5, and 0.8
+cm_results <- bind_rows(
+  get_cm(df, 0.2),
+  get_cm(df, 0.5),
+  get_cm(df, 0.8)
+)
+
+print(cm_results)
+
+```
+
+### Performance Metrics
+
+Now, I will use the TP, FP, TN and FN values calcuated above to derive the standard performance metrics.
+
+```{r}
+#| echo: true
+performance_metrics <- cm_results %>%
+  mutate(
+    Accuracy  = (TP + TN) / (TP + TN + FP + FN),
+    Precision = TP / (TP + FP),
+    Recall    = TP / (TP + FN),
+    F1_Score  = 2 * (Precision * Recall) / (Precision + Recall)
+  ) %>%
+  select(threshold, Accuracy, Precision, Recall, F1_Score)
+
+# Display as a clean table
+knitr::kable(performance_metrics, digits = 3)
+
+```
+
+### Threshold Use Cases
+
+Some examples of threshold use cases that I was able to derive using LLM Google Gemini are as follows:
+
+The choice of threshold depends on which type of error is more "expensive."
+
+#### **A 0.2 Threshold (Lenient)**
+
+-   **Scenario: Cancer Screening (Medical Diagnosis).**
+
+-   **Reasoning:** In this case, a *False Negative* (missing a cancer diagnosis) is life-threatening, while a False Positive (a healthy person getting a follow-up test) is merely an inconvenience. We set a low threshold (0.2) to ensure we "catch" almost every positive case, prioritizing Recall over Precision.
+
+#### **A 0.8 Threshold (Strict)**
+
+-   **Scenario: Email Spam Filtering.**
+
+-   **Reasoning:** A False Positive (sending an important work email to the Spam folder) is much more harmful than a False Negative (letting one spam email into the Inbox). We set a high threshold (0.8) to ensure that when the model labels something as "Spam," it is almost certainly correct, prioritizing Precision over Recall.
